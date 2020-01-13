@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">유치원을 부탁해!</string>
+    <string name="title_home">홈</string>
+    <string name="title_find">찾기</string>
+    <string name="title_community">커뮤니티</string>
+    <string name="title_mypage">마이페이지</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
