@@ -1,4 +1,4 @@
 package kr.studiows.findkindergarten;
 
-public class favoriteViewPanel {
+public class DetailViewAdapter {
 }

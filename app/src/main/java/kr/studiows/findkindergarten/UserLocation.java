@@ -1,4 +1,4 @@
 package kr.studiows.findkindergarten;
 
-public class FilterViewPanel {
+public class UserLocation {
 }
