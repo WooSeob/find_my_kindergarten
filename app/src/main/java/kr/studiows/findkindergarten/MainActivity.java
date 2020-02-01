@@ -7,10 +7,16 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.util.Log;
 import android.view.MenuItem;
+
+import net.daum.mf.map.api.MapPoint;
+import net.daum.mf.map.api.MapReverseGeoCoder;
+import net.daum.mf.map.api.MapView;
 
 public class MainActivity extends AppCompatActivity {
     FragmentManager fm;
@@ -36,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
                 case R.id.navigation_find:
                     tran.replace(R.id.main_frame, Find);
                     tran.commit();
+
                     return true;
 
                 case R.id.navigation_community:
@@ -99,4 +106,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onBackPressed(){
+        for (Fragment fragment: getSupportFragmentManager().getFragments()) {
+            if (fragment.isVisible()) {
+                //최상위 프래그먼트 가져오기.
+                if(fragment instanceof fragFind){
+                    // 지금 열려있는 프래그먼트가 fragFind 일때.
+                    if(Find.onBackPressed()){
+                        super.onBackPressed();
+                    }
+                }else{
+                    // 지금 열려있는 프래그먼트가 fragFind 이외의 것일때
+                    super.onBackPressed();
+                }
+            }
+        }
+    }
 }

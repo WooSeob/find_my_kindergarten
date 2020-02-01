@@ -1,5 +1,7 @@
 package kr.studiows.findkindergarten;
 
+import com.loopj.android.http.*;
+
 import android.content.ContentValues;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -8,7 +10,11 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Map;
+
+import cz.msebera.android.httpclient.entity.mime.Header;
 
 public class RequestHttpURLConnection {
 
@@ -30,6 +36,7 @@ public class RequestHttpURLConnection {
             // 파라미터가 2개 이상이면 파라미터 연결에 &가 필요하므로 스위칭할 변수 생성.
             boolean isAnd = false;
             // 파라미터 키와 값.
+
             String key;
             String value;
 
@@ -102,4 +109,7 @@ public class RequestHttpURLConnection {
 
     }
 
+
+
 }
+

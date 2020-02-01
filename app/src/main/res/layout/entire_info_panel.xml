@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/entire_info_panel_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layout_marginLeft="10dp"
+    android:layout_marginRight="10dp"
+    android:visibility="invisible">
+
+    <TextView
+        android:id="@+id/t_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="상세정보" />
+
+    <TextView
+        android:id="@+id/t_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:text="유치원명" />
+
+    <TextView
+        android:id="@+id/t_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="설립유형" />
+
+    <TextView
+        android:id="@+id/t_addr"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="주소" />
+
+    <TextView
+        android:id="@+id/t_rppnname"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="대표자명" />
+
+    <TextView
+        android:id="@+id/t_ldgrname"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="원장명" />
+
+    <TextView
+        android:id="@+id/t_subofficeedu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="교육지원청명" />
+
+    <TextView
+        android:id="@+id/t_telno"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="전화번호" />
+
+    <TextView
+        android:id="@+id/t_hpaddr"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="홈페이지" />
+
+    <TextView
+        android:id="@+id/t_edate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:text="설립일" />
+
+    <TextView
+        android:id="@+id/t_odate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:text="개원일" />
+
+    <TextView
+        android:id="@+id/t_opertime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:text="운영시간" />
+
+
+
+    <TextView
+        android:id="@+id/t_clcnt3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="만3세학급수" />
+
+    <TextView
+        android:id="@+id/t_clcnt4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="만4세학급수" />
+
+    <TextView
+        android:id="@+id/t_clcnt5"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="만5세학급수" />
+
+    <TextView
+        android:id="@+id/t_mixclcnt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="혼합학급수" />
+
+    <TextView
+        android:id="@+id/t_shclcnt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="특수학급수" />
+
+    <TextView
+        android:id="@+id/t_ppcnt3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="만3세유아수" />
+
+    <TextView
+        android:id="@+id/t_ppcnt4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="만4세유아수" />
+
+    <TextView
+        android:id="@+id/t_ppcnt5"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="만5세유아수" />
+
+    <TextView
+        android:id="@+id/t_mixppcnt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="혼합유아수" />
+
+    <TextView
+        android:id="@+id/t_shppcnt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="특수유아수" />
+
+
+
+</LinearLayout>
