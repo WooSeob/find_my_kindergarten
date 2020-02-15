@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ItemViewHolder> {
-
     private final static String TAG = "RecyclerAdapter";
     private List<KinderData.Kinder> kinders;
     private List<KinderData.Kinder> favorites;
@@ -28,7 +27,6 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ItemVi
         this.kinders = kinders;
         this.parent = parentController;
     }
-
     public RecyclerAdapter(List<KinderData.Kinder> kinders, List<KinderData.Kinder> favorites, BottomPanelController parentController){
         this.kinders = kinders;
         this.favorites = favorites;
@@ -44,7 +42,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ItemVi
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
-        holder.onBind(kinders.get(position));
+        holder.onBind(kinders.get(position), position);
     }
 
     @Override
@@ -54,15 +52,14 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ItemVi
 
 
     class ItemViewHolder extends RecyclerView.ViewHolder{
-
         private TextView title, distance, addr, type, rate;
         //TODO 나중에 체크박스말고 다른걸로 변경할것
         private CheckBox favorite;
         private KinderData.Kinder thisKinder;
+        private int thisPosition;
 
         public ItemViewHolder(@NonNull View itemView) {
             super(itemView);
-
             title = itemView.findViewById(R.id.title);
             distance = itemView.findViewById(R.id.distance);
             addr = itemView.findViewById(R.id.addr);
@@ -77,7 +74,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ItemVi
                      *  해당 유치원의 전체 정보를 보여주는 창으로 넘어감
                      **/
                     //홀더가 생성될때 kinder를 매개변수로 받아서 작업하기 때문에 thisKinder는 null 이 아님이 보장됨
-                    parent.showEntireInformation(thisKinder);
+                    parent.showEntireInformation(thisKinder, thisPosition);
                 }
             });
 
@@ -91,13 +88,18 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ItemVi
                         // 체크 해제 되면 favorite 리스트에서 제거.
                         favorites.remove(thisKinder);
                     }
+
+                    parent.getDetailViewAdapter().notifyDataSetChanged();
+
+                    Log.d(TAG, "onClick: " + thisKinder.getName() + " favorite : " + thisKinder.isFavorite());
                 }
             });
 
         }
 
-        void onBind(KinderData.Kinder k){
+        void onBind(KinderData.Kinder k, int pos){
             this.thisKinder = k;
+            this.thisPosition = pos;
             String dist = String.valueOf(Math.ceil(k.getDistance())) + "m";
             title.setText(k.getName());
             distance.setText(dist);

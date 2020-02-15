@@ -59,7 +59,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     /*
-    TODO 해야 할것 1.현위치 마커, 2. 각종 오버레이 추가 현위치버튼 검색필터 등등
      */
 
 

@@ -6,7 +6,7 @@
     android:paddingHorizontal="5dp"
     android:paddingVertical="5dp"
     android:orientation="vertical"
-    android:visibility="invisible">
+    android:visibility="visible">
 
 
     <TextView
@@ -33,28 +33,61 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="유치원" />
+            android:text="유치원"
+            android:checked="true"/>
+
     </RadioGroup>
 
-        <LinearLayout
-            android:layout_width="match_parent"
+    <CheckBox
+        android:id="@+id/chbx_favorite"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="즐겨찾기만 보기" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="설립유형" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <CheckBox
+            android:id="@+id/chbx_public_byeongseol"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:checked="true"
+            android:text="공립(병설)" />
 
-            <Button
-                android:id="@+id/button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Button" />
+        <CheckBox
+            android:id="@+id/chbx_public_danseol"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="공립(단설)" />
+    </LinearLayout>
 
-            <Button
-                android:id="@+id/button2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Button" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
-        </LinearLayout>
+        <CheckBox
+            android:id="@+id/chbx_private_beobin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="사립(법인)" />
 
+        <CheckBox
+            android:id="@+id/chbx_private_sain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="공립(사인)" />
+    </LinearLayout>
 
 
 </LinearLayout>

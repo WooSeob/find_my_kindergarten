@@ -1,63 +1,134 @@
 package kr.studiows.findkindergarten;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.location.Location;
-import android.location.LocationManager;
-import android.os.AsyncTask;
-import android.util.JsonReader;
 import android.util.Log;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
-import net.daum.mf.map.api.MapCircle;
 import net.daum.mf.map.api.MapPOIItem;
 import net.daum.mf.map.api.MapPoint;
 import net.daum.mf.map.api.MapView;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.security.Signature;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
+
 import java.util.Set;
 
-import javax.net.ssl.HttpsURLConnection;
-
 public class KinderData {
+    public final static String NURSERY_API_KEY = "89a20d8e18334933859fbe05125b96f5";
     public final static String KINDER_API_KEY = "b065a65e683d46d3abcff4f9780e5fd4";
-    public final static int TYPE_KINDER = 1;
-    public final static int TYPE_NURSERY = 2;
+
+    public final static int TYPE_KINDER = 0;
+    public final static int TYPE_NURSERY = 1;
+    private int searchType = TYPE_KINDER; //유치원, 어린이집 중 어떤것을 탐색할건지 정보를 담는 변수
 
     private KinderDataController myController;
     private MapView mapView;
 
+
+    private Set<String> KinderTypes = new HashSet<>();
+    private Set<String> NurseryTypes = new HashSet<>();
+    private Set<String> establishTypes = KinderTypes; //레퍼런스만 있는변수
+
+
     private Set<String> CURRENT_GU = new HashSet<>();
 
-
     private HashMap<String, KinderUnits> KindersGroupedByGu = new HashMap<>();
-    private Queue<KinderUnits> drawingQueue = new LinkedList<>();
+    private HashMap<String, KinderUnits> NurseryGroupedByGu = new HashMap<>();
+
+    private List<Kinder> Displayed = new ArrayList<>();
+
 
     private UserLocation currentLoc = new UserLocation();
 
     //private HashMap<String, NurseryUnits>
     private static String TAG = "KinderData";
+    public int getKinderNurseryType(){
+        return searchType;
+    }
+    public void setKinderNurseryType(int Type){
+        //변경이 발생한경우에만 호출
 
+        //기존 마커들 모두 지우기
+        for(String gu : CURRENT_GU){
+            if(isDataExist(searchType, gu)){
+                getKinderUnitsFromGu(searchType, gu).removeMarkers();
+            }
+        }
+
+        //옵션필터 재설정해주기.
+        if(Type == TYPE_KINDER){
+            establishTypes = KinderTypes;
+        }else{
+            establishTypes = NurseryTypes;
+        }
+
+        //타입변경후 새로그리기
+        this.searchType = Type;
+
+        for(String gu : CURRENT_GU){
+            if(isDataExist(searchType, gu)){
+                getKinderUnitsFromGu(searchType, gu).drawMarkers(myController.getIsFavoriteOnly(), establishTypes);
+            }
+        }
+
+        myController.updateKinderLists(Displayed);
+
+        //데이터 없으면 다운로드.
+        for(String gu : CURRENT_GU){
+            KinderAPI.getData(gu, myController, searchType);
+        }
+
+    }
+    public void setEstablishTypes(int Type,String option, boolean isAdd){
+        Log.d(TAG, "setType: type : " + option + ", isAdd : " + isAdd );
+        Set<String> options;
+        if(Type == TYPE_KINDER){
+            options = KinderTypes;
+        }else{
+            options = NurseryTypes;
+        }
+
+        if(isAdd){
+            options.add(option);
+        }else{
+            options.remove(option);
+        }
+        updateMarkers();
+    }
+
+    public Set<String> getTypes(){
+        return establishTypes;
+    }
     public KinderData(KinderDataController myController) {
         this.myController = myController;
+        //TODO 임시
+        KinderTypes.add("공립(병설)");
+        KinderTypes.add("공립(단설)");
+        KinderTypes.add("사립(사인)");
+        KinderTypes.add("사립(법인)");
+
+        NurseryTypes.add("국공립");
+        NurseryTypes.add("사회복지법인");
+        NurseryTypes.add("법인·단체등");
+        //TODO 민간개인, 민간?
+        NurseryTypes.add("민간개인");
+        NurseryTypes.add("민간");
+        NurseryTypes.add("가정");
+        NurseryTypes.add("협동");
+        NurseryTypes.add("직장");
     }
+    public void addToDisplayedList(List<Kinder> DisplayedList){
+        Displayed.addAll(DisplayedList);
+    }
+
+    public void deleteFromDisplayedList(List<Kinder> DisplaydList){
+        Displayed.removeAll(DisplaydList);
+    }
+
 
     public UserLocation getUserLocation(){
         return currentLoc;
@@ -80,8 +151,11 @@ public class KinderData {
                 }
 
             case TYPE_NURSERY:
-                //TODO 나중에 어린이집부분도 동일하게 구현할것.
-                break;
+                if(NurseryGroupedByGu.get(Si_Gun_Gu) != null){
+                    return true;
+                }else{
+                    return false;
+                }
         }
         return false;
     }
@@ -93,33 +167,63 @@ public class KinderData {
                 break;
 
             case TYPE_NURSERY:
+                NurseryGroupedByGu.put(Si_gun_gu, newUnits);
                 break;
         }
     }
 
-    public void setCurrentGu(Set<String> NewGu){
+    public void updateMarkers(){
+        markerDrawingHandler(CURRENT_GU, CURRENT_GU);
+    }
+
+    public void markerDrawingHandler(Set<String> GusToRemove, Set<String> GusToDraw){
+        //지우기
+        if(GusToRemove != null){
+            for(String gu : GusToRemove){
+                if(isDataExist(searchType, gu)){
+                    getKinderUnitsFromGu(searchType, gu).removeMarkers();
+                }
+            }
+        }
+        //그리기
+        for(String gu : GusToDraw){
+            if(isDataExist(searchType, gu)){
+                getKinderUnitsFromGu(searchType, gu).drawMarkers(myController.getIsFavoriteOnly(), establishTypes);
+            }
+        }
+
+        myController.updateKinderLists(Displayed);
+
+        //myController.getvAdapter().notifyDataSetChanged();
+        //myController.getListAdapter().notifyDataSetChanged();
+
+    }
+    public void setCurrentGu(Set<String> NewGu, Set<String> GusToRemove, Set<String> GusToDraw){
         //행정 구 포커싱이 바뀔때 호출
+        //TODO test 마커 모두삭제
+        markerDrawingHandler(GusToRemove, GusToDraw);
+
         CURRENT_GU.clear();
         CURRENT_GU.addAll(NewGu);
 
-        myController.getKinderList().clear();
-        for(String gu : CURRENT_GU){
-            if(isDataExist(TYPE_KINDER, gu)){
-                myController.updateKinderLists(getKinderUnitsFromGu(gu).getKinders());
-            }
-            //현재 구에 추가 되있지만 데이터가 없는 것들은 나중에 완료되면 추가될것임.
-        }
+        //인디케이터 업데이트
+        myController.getUiController().setSigunguIndicator(NewGu.toString());
     }
-    public KinderUnits getKinderUnitsFromGu(String SiGunGu){
-        if(isDataExist(TYPE_KINDER, SiGunGu)){
-            return KindersGroupedByGu.get(SiGunGu);
+    public KinderUnits getKinderUnitsFromGu(int Type, String SiGunGu){
+        if(isDataExist(Type, SiGunGu)){
+            if(Type == TYPE_KINDER){
+                return KindersGroupedByGu.get(SiGunGu);
+            }else{
+                return NurseryGroupedByGu.get(SiGunGu);
+            }
         }else{
             Log.d(TAG, "getKinderUnitsFromGu : " + SiGunGu + " is now null !!!");
             return null;
         }
     }
-    public KinderUnits newKinderUnits(String SiGunGu, int numKinders){
-        return new KinderUnits(this, SiGunGu, numKinders);
+
+    public KinderUnits newKinderUnits(String SiGunGu, int Type, int numKinders){
+        return new KinderUnits(this, Type, SiGunGu, numKinders);
     }
 
 
@@ -127,38 +231,9 @@ public class KinderData {
         return KindersGroupedByGu.keySet();
     }
 
-    public static String getSGGfromAddress(String address){
-        String[] splitedDist = address.split(" ");
-        String result = "";
-        //ex. address = "경기도 용인시 수지구"
-
-        for(int i = 0; i < splitedDist.length; i++){
-            // result = 용인시
-            if( splitedDist[i].endsWith("시") || splitedDist[i].endsWith("군") ){
-                result += splitedDist[i];
-            }
-            if(splitedDist[i].endsWith("구")){
-                // result = 용인시 수지구
-                result = result + " " + splitedDist[i];
-            }
-        }
-        //Log.d(TAG, "getSGGfromAddress / input : " + address + "/ output : " + result.trim());
-        return result.trim();
-    }
-
-    public static String getKinderDataURL(String si_gun_gu){
-        // params : 시 군 구 (ex "용인시 수지구")
-        // return : 입력 받은 시 군 구에 해당하는 시도 코드, 시군구 코드를 포함한 API 쿼리스트링
-        AddrCodeConst code = new AddrCodeConst();
-        String SIDO_CODE = code.get_SIDO_CODE(si_gun_gu);
-        String SGG_CODE = code.get_SIGUNGU_CODE(si_gun_gu);
-
-        return "http://e-childschoolinfo.moe.go.kr/api/notice/basicInfo.do?key=" + KINDER_API_KEY + "&sidoCode=" + SIDO_CODE + "&sggCode=" + SGG_CODE;
-    }
-
-
 
     public class Kinder implements Comparable<Kinder>{
+        private int Type;
         private boolean isDisplayed = false;
         private boolean isReady = false;
 
@@ -169,13 +244,15 @@ public class KinderData {
         //initialize required
         private MapPoint mpLocation = null;
         private MapPOIItem marker = null;
-        /** Kinder Entry Point.
+        /** Kinder 클래스 생성 시나리오.
          *  1. 생성자 Kinder(Map attr)
          *  2. updateLatLng(String, String)
          *     -> setMarker()
         * */
+
         public Kinder(KinderUnits parent, Map attr){
             this.parent = parent;
+            this.Type = parent.Type;
             this.attr = attr;
         }
 
@@ -189,39 +266,54 @@ public class KinderData {
         }
         //setter
         public void setFavorite(boolean b){
+            if(b){
+                parent.addKinderToFavorites(this);
+            }else{
+                parent.removeKinderFromFavorites(this);
+            }
             this.isFavorite = b;
         }
-        public void setLatLng(String la, String lo, MapPoint mp){
-            attr.put("la", la.trim());
-            attr.put("lo", lo.trim());
-            mpLocation = mp;
+        public void setLatLng(String la, String lo){
+            attr.put("la", Double.parseDouble(la.trim()));
+            attr.put("lo", Double.parseDouble(lo.trim()));
         }
+
         public void setDistance(double d){
             this.distance = d;
         }
-        public void setMarker(MapPOIItem marker){
+        public void setMarker(MapPOIItem marker, MapPoint mp){
             this.marker = marker;
+            this.mpLocation = mp;
             this.isReady = true;
         }
 
-        public void drawMarker(MapView mapView){
+        private void drawMarker(MapView mapView){
             if(isReady && !isDisplayed){
                 mapView.addPOIItem(marker);
-                parent.increaseDisplayCount();
                 isDisplayed = true;
+                parent.getDisplayedList().add(this);
             }else{
-                Log.d(TAG, "Kinder, drawMarker : drawMarker(MapView) was called but marker is null");
+                Log.d(TAG, "Kinder, drawMarker : drawMarker(MapView) was called but could't marker : " + marker + ", isDisplayed : " + isDisplayed);
             }
         }
         
-        public void removeMarker(MapView mapView){
+        private void removeMarker(MapView mapView){
             if(isReady && isDisplayed){
                 mapView.removePOIItem(marker);
                 isDisplayed = false;
+                parent.getDisplayedList().remove(this);
             }else{
                 Log.d(TAG, "Kinder, removeMarker : removeMarker(MapView) was called but could not process. marker : " + marker + ", isDisplayed : " + isDisplayed);
             }
         }
+        /**
+         * 이름
+         * 설립유형
+         * 주소
+         * 전화번호
+         * 운영시간
+         * 홈페이지
+        */
         //getter
         public KinderUnits getParent(){
             return parent;
@@ -238,15 +330,29 @@ public class KinderData {
         public String getLatLng(){
             return "lat : " + mpLocation.getMapPointGeoCoord().latitude + ", lng: " + mpLocation.getMapPointGeoCoord().longitude;
         }
+
+
         public String getName(){
-            return (String)attr.get("kindername");
-        }
-        public String getAddr(){
-            return (String)attr.get("addr");
+            //TODO 유치원 어린이집 구분에 따라 값 받아올수 있도록
+            return (String)attr.get(Key.name(this.Type));
         }
         public String getEstablishType(){
-            return (String)attr.get("establish");
+            return (String)attr.get(Key.estType(this.Type));
         }
+        public String getAddr(){
+            return (String)attr.get(Key.addr(this.Type));
+        }
+        public String getTelno(){
+            return (String)attr.get(Key.telno(this.Type));
+        }
+        public String getOperTime(){
+            return (String)attr.get(Key.optime(this.Type));
+        }
+        public String getHomepage(){
+            return (String)attr.get(Key.homepage(this.Type));
+        }
+
+
 
         @Override
         public int compareTo(Kinder kinder) {
@@ -260,86 +366,100 @@ public class KinderData {
         }
     }
 
-
-    public class KinderUnits{
+    public class KinderUnits {
         /* KinderData의 HashMap에 시,군,구 별 Key에 해당하는 Value가 될 클래스
-        *
-        * */
+         *
+         * */
         private KinderData parent;
+        private int Type;
         private boolean isDisplayed = false; //마커가 맵에 그려져 있는지 아닌지를 나타내는 변수
         private boolean isComplete = false; //다운로드, 마커 세팅까지 모두 끝났음을 보장하는 변수
 
         private int displayedCount = 0;
 
         private String mySiGunGu = "";
-
         private int numKinders;
-        private int numKindersToDraw = 0;
-
-        private List<Kinder> Group_Family = new ArrayList<>();
-        private List<Kinder> Group_Private = new ArrayList<>();
-        private List<Kinder> Group_National = new ArrayList<>();
 
         private List<Kinder> Kinders = Collections.synchronizedList(new ArrayList<Kinder>());
+        private List<Kinder> Favorites = Collections.synchronizedList(new ArrayList<Kinder>());
+
+        private List<Kinder> Displayed = new ArrayList<>();
+
         private List<Kinder> Failures = new ArrayList<>();
 
+        public KinderUnits(KinderData parent, int Type, String sigungu, int numKinders) {
+            Log.d(TAG, "KinderUnits : new(" + sigungu + ")");
+            this.parent = parent;
+            this.Type = Type;
+            this.numKinders = numKinders;
+            this.mySiGunGu = sigungu;
+        }
 
-        public boolean isDisplayed(){
-            if(isComplete && isDisplayed){
+        public void addKinderToFavorites(Kinder k) {
+            Favorites.add(k);
+        }
+
+        public void removeKinderFromFavorites(Kinder k) {
+            Favorites.remove(k);
+        }
+
+        public boolean isDisplayed() {
+            if (isComplete && isDisplayed) {
                 return true;
-            }else{
+            } else {
                 Log.d(TAG, "isDisplayed : " + isDisplayed + ", isComplete : " + isComplete);
                 return false;
             }
         }
 
-        public void increaseDisplayCount(){
-            displayedCount++;
-
-            if(displayedCount == numKindersToDraw){
-                this.isDisplayed = true;
+        public void removeMarkers() {
+            List<Kinder> target = new ArrayList<>(Displayed);
+            parent.deleteFromDisplayedList(Displayed);
+            for (Kinder k : target) {
+                k.removeMarker(mapView);
             }
         }
 
-        public KinderUnits(KinderData parent, String sigungu, int numKinders){
-            Log.d(TAG, "KinderUnits : new(" + sigungu + ")");
-            this.parent = parent;
-            this.numKinders = numKinders;
-            this.mySiGunGu = sigungu;
-        }
-
-
-        public void removeMarkers(){
-            if(isDisplayed()){
-                for(Kinder k : Kinders){
-                    k.removeMarker(mapView);
+        public void drawMarkers(boolean isFavoriteOnly, Set<String> estTypes) {
+            Log.d(TAG, "drawMarkers: isFavoriteOnly : " + isFavoriteOnly);
+            if (isFavoriteOnly) {
+                for (Kinder k : Favorites) {
+                    if (k != null) {
+                        k.drawMarker(mapView);
+                    } else {
+                        Log.d(TAG, "drawMarkers : kinder is null");
+                    }
                 }
-                displayedCount = 0;
-                this.isDisplayed = false;
-            }else{
-                Log.d(TAG, "deleteMarkers: 완전히 로딩되지않았기 때문에 마커를 지울 수 없습니다.");
-            }
-        }
-
-        public void drawMarkers(){
-            for(Kinder k : Kinders){
-                if(k != null){
-                    k.drawMarker(mapView);
-                }else{
-                    Log.d(TAG, "drawMarkers : kinder is null");
+            } else {
+                for (Kinder k : Kinders) {
+                    if (k != null) {
+                        //TODO 어린이집, 유치원 마커 드로잉(옵션기반) 로직 정리하기
+                        if (searchType == this.Type) {
+                            if(estTypes.contains(k.getEstablishType())){
+                                //유치원 설립구분에 해당되면 마커 그려준다.
+                                k.drawMarker(mapView);
+                            }else{
+                                Log.d(TAG, "drawMarkers: EstablishType : " + k.getEstablishType());
+                            }
+                        }
+                    } else {
+                        Log.d(TAG, "drawMarkers : kinder is null");
+                    }
                 }
             }
+            parent.addToDisplayedList(Displayed);
         }
-        public Kinder newKinder(Map attr){
+
+        public Kinder newKinder(Map attr) {
             return new Kinder(this, attr);
         }
 
-        public Kinder findKinderByMarker(MapPOIItem marker){
+        public Kinder findKinderByMarker(MapPOIItem marker) {
             Log.d(TAG, "findKinderByMarker : target : " + marker);
 
-            for(Kinder k : Kinders){
+            for (Kinder k : Kinders) {
                 Log.d(TAG, "findKinderByMarker : found : " + k.getMarker());
-                if(k.getMarker() == marker){
+                if (k.getMarker() == marker) {
                     return k;
                 }
             }
@@ -349,53 +469,53 @@ public class KinderData {
         }
 
 
-        public void addKinder(Kinder k){
+        public void addKinder(Kinder k) {
             Kinders.add(k);
-            String estType = k.getEstablishType();
-            if (estType.equals("사립(사인)")){
 
-            }else if(estType.equals("공립(병설)")){
-
-            }else if(estType.equals("")){
-
-            }
             checkComplete();
         }
-        public void addKinderToFailures(Kinder k){
+
+        public void addKinderToFailures(Kinder k) {
+            //위경도를 찾을수 없는 Kinder들
             Failures.add(k);
             checkComplete();
         }
-        private void checkComplete(){
-            if((Kinders.size() + Failures.size()) == numKinders){
+
+        private void checkComplete() {
+            if ((Kinders.size() + Failures.size()) == numKinders) {
                 Log.d(TAG, mySiGunGu + "down load finished. num of items : " + numKinders + ", drawable : " + Kinders.size());
                 /*  Kinder.updateLatLng() 호출 후
                     addKinder() 를 호출 하기 때문에 해당 kinder 는 마커까지 세팅이 되있음을 보장함.
                     이부분이 다운로드가 모두 완료된 시점임.
                 */
                 isComplete = true;
-                numKindersToDraw = Kinders.size();
-                parent.makeNewGroup(KinderData.TYPE_KINDER, mySiGunGu, this);
+                parent.makeNewGroup(this.Type, mySiGunGu, this);
 
                 //이 Unit의 구가 현재 포커스 되있는 구라면 바로 마커 그려준다.
-                if(getCurrentGu().contains(mySiGunGu)){
+                if (getCurrentGu().contains(mySiGunGu)) {
                     // 컨트롤러의 데이터 업데이트
-                    myController.updateKinderLists(getKinders());
-                    drawMarkers();
+                    // 해당하는 구 그려주기
+                    Set<String> thisGu = new HashSet<>();
+                    thisGu.add(mySiGunGu);
+                    markerDrawingHandler(null, thisGu);
                 }
-                //else면 removeMarkers 해보기!!
-                //TODO 정렬알고리즘 나중에 구현할것
-
-            }else{
+            } else {
             }
         }
-        public List<Kinder> getKinders(){
+
+        public List<Kinder> getKinders() {
             return Kinders;
         }
-        public String getSiGunGu(){
+
+        public String getSiGunGu() {
             return mySiGunGu;
         }
-    }
 
+        public List<Kinder> getDisplayedList() {
+            return Displayed;
+        }
+
+    }
 
 
 }

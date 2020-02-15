@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     app:cardElevation="10dp"
     app:cardCornerRadius="10dp"
-    app:behavior_peekHeight="64dp"
+    app:behavior_peekHeight="60dp"
     app:behavior_hideable="false"
     app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
     android:visibility="visible">

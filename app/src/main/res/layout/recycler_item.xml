@@ -21,7 +21,7 @@
                 android:layout_height="wrap_content"
                 android:text="유치원명"
                 android:textStyle="bold"
-                android:textSize="24sp" />
+                android:textSize="20sp" />
 
         </LinearLayout>
 
@@ -31,7 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_marginRight="10dp"
             android:text="유치원 주소"
-            android:textSize="16sp" />
+            android:textSize="14sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -42,7 +42,7 @@
                 android:id="@+id/distance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:layout_marginRight="10dp"
                 android:text="거리" />
 
@@ -54,14 +54,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="10dp"
                 android:text="설립구분"
-                android:textSize="16sp" />
+                android:textSize="14sp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/rate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:text="평점" />
     </LinearLayout>
 

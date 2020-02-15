@@ -20,6 +20,7 @@ public class UserLocation implements MapView.CurrentLocationEventListener{
     @Override
     public void onCurrentLocationUpdate(MapView mapView, MapPoint mapPoint, float v) {
         this.CURRENT_LOC_POINT = mapPoint;
+        mapView.setMapCenterPoint(getMapPoint(), true);
     }
 
     @Override

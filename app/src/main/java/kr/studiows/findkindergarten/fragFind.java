@@ -1,15 +1,5 @@
 package kr.studiows.findkindergarten;
 
-import android.Manifest;
-import android.content.ContentValues;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.location.Location;
-import android.location.LocationManager;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.RequiresApi;
@@ -39,13 +29,10 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 
-public class fragFind extends Fragment implements View.OnClickListener, MapView.MapViewEventListener , MapView.POIItemEventListener{
+public class fragFind extends Fragment implements View.OnClickListener, MapView.POIItemEventListener, MapView.MapViewEventListener{
     public static int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     public final String KAKAO_MAP_API_KEY = "51e49db89617045c570a97ddbc60e7c7";
     public final String kinderData_API_KEY = "b065a65e683d46d3abcff4f9780e5fd4";
-
-
-    private Queue<Set<String>> GuChangeTasks = new LinkedList<>();
 
     private boolean gpsGranted = false;
 
@@ -54,6 +41,7 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
 
     private KinderDataController kinderDataController;
     private BottomPanelController uiController;
+    private boolean isDraged = false;
 
     public fragFind() {
         // Required empty public constructor
@@ -67,7 +55,6 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
     public void onStart(){
         super.onStart();
         mapView.setMapViewEventListener(this);
-
     }
 
     @Override
@@ -104,6 +91,7 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
         mapView.setCurrentLocationTrackingMode(MapView.CurrentLocationTrackingMode.TrackingModeOnWithoutHeading);
         mapView.setCurrentLocationRadius(100);
 
+        uiController.setMapViewDraged(true);
         updateSiGunGu(mapView.getMapCenterPoint());
 
         //MapPoint testLoc = MapPoint.mapPointWithGeoCoord(37.307135, 127.081089);
@@ -120,16 +108,16 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
     }
 
     public boolean onBackPressed(){
-        if (uiController.getBottomSheetBehavior().getState() == BottomSheetBehavior.STATE_EXPANDED){
-            uiController.getBottomSheetBehavior().setState(BottomSheetBehavior.STATE_COLLAPSED);
-            return false;
-        }else{
-            return true;
-        }
+        /**
+         * 뒤로가기 누를때 호출
+        **/
+        return uiController.backAction();
     }
 
     public void updateSiGunGu(MapPoint mapPoint){
-        double DELTA = 0.006;
+        String TAG = "updateSiGunGu";
+        Log.d(TAG, "start update sigungu");
+        double DELTA = 0.007;
 
         MapReverseGeoCoder.ReverseGeoCodingResultListener resultListener = new SiGunGuExtractor();
         MapPoint.GeoCoordinate center = mapPoint.getMapPointGeoCoord();
@@ -138,6 +126,8 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
         mp2 = MapPoint.mapPointWithGeoCoord(center.latitude - DELTA,center.longitude + DELTA);
         mp3 = MapPoint.mapPointWithGeoCoord(center.latitude + DELTA,center.longitude - DELTA);
         mp4 = MapPoint.mapPointWithGeoCoord(center.latitude - DELTA,center.longitude - DELTA);
+
+
 
         MapReverseGeoCoder rgc1 = new MapReverseGeoCoder(KAKAO_MAP_API_KEY, mp1, resultListener, getActivity());
         MapReverseGeoCoder rgc2 = new MapReverseGeoCoder(KAKAO_MAP_API_KEY, mp2, resultListener, getActivity());
@@ -157,33 +147,40 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
     public void onMapViewInitialized(MapView mapView) {
         Log.d("map", "initialized");
     }
-
     @Override
     public void onMapViewCenterPointMoved(final MapView mapView, MapPoint mapPoint) {
+        String TAG = "MapEventListenerTest";
+        Log.d(TAG, "onMapViewCenterPointMoved: ");
     }
 
     @Override
     public void onMapViewZoomLevelChanged(MapView mapView, int i) {
-
+        String TAG = "MapEventListenerTest";
+        Log.d(TAG, "onMapViewZoomLevelChanged: ");
     }
 
     @Override
     public void onMapViewSingleTapped(MapView mapView, MapPoint mapPoint) {
-
+        String TAG = "MapEventListenerTest";
+        Log.d(TAG, "onMapViewSingleTapped: ");
     }
 
     @Override
     public void onMapViewDoubleTapped(MapView mapView, MapPoint mapPoint) {
-
+        String TAG = "MapEventListenerTest";
+        Log.d(TAG, "onMapViewDoubleTapped: ");
     }
 
     @Override
     public void onMapViewLongPressed(MapView mapView, MapPoint mapPoint) {
-
+        String TAG = "MapEventListenerTest";
+        Log.d(TAG, "onMapViewLongPressed: ");
     }
 
     @Override
     public void onMapViewDragStarted(MapView mapView, MapPoint mapPoint) {
+        String TAG = "MapEventListenerTest";
+        Log.d(TAG, "onMapViewDragStarted: ");
         if(mapView.getCurrentLocationTrackingMode() != MapView.CurrentLocationTrackingMode.TrackingModeOff )
         {
             mapView.setCurrentLocationTrackingMode(MapView.CurrentLocationTrackingMode.TrackingModeOff);
@@ -193,17 +190,22 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
 
     @Override
     public void onMapViewDragEnded(MapView mapView, MapPoint mapPoint) {
-
+        String TAG = "MapEventListenerTest";
+        Log.d(TAG, "onMapViewDragEnded: ");
+        //사용자가 직접 터치 드래그 했을때만 새롭게 시군구를 감지하도록 함
+        uiController.setMapViewDraged(true);
     }
 
     @Override
     public void onMapViewMoveFinished(MapView mapView, MapPoint mapPoint) {
-        Log.d("map", "Map Move Finished");
-        //mapView.removeAllPOIItems();
-        //TODO 사람손으로 직접 드래그 했을때만 리버스 지오코딩 하도록 변경할것 !!
-        updateSiGunGu(mapPoint);
-    }
+        String TAG = "MapEventListenerTest";
+        Log.d(TAG, "onMapViewMoveFinished: ");
 
+        if(uiController.isMapViewDraged()){
+            updateSiGunGu(mapPoint);
+            uiController.setMapViewDraged(false);
+        }
+    }
     /**
     * 마커 리스너
     * */
@@ -217,7 +219,7 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
 
         Log.d("map", "marker selected : " + gu);
 
-        KinderData.Kinder selectedKinder = kinderData.getKinderUnitsFromGu(gu).findKinderByMarker(mapPOIItem);
+        KinderData.Kinder selectedKinder = kinderData.getKinderUnitsFromGu(kinderData.getKinderNurseryType(), gu).findKinderByMarker(mapPOIItem);
 
         if(selectedKinder != null){
             kinderDataController.loadDetailView(selectedKinder);
@@ -264,65 +266,6 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
         }
     }
 
-    public class KinderAPI extends AsyncTask<Void, Void, String> {
-
-        private String SiGunGu;
-        private String url;
-        private ContentValues values;
-
-        public KinderAPI(String url, ContentValues values) {
-            this.url = url;
-            this.values = values;
-        }
-
-        public KinderAPI(String sigungu, String url, ContentValues values) {
-            this.SiGunGu = sigungu;
-            this.url = url;
-            this.values = values;
-        }
-
-        @Override
-        protected String doInBackground(Void... params) {
-
-            String result; // 요청 결과를 저장할 변수.
-            RequestHttpURLConnection requestHttpURLConnection = new RequestHttpURLConnection();
-            result = requestHttpURLConnection.request(url, values); // 해당 URL로 부터 결과물을 얻어온다.
-
-            return result;
-        }
-
-        @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-        @Override
-        protected void onPostExecute(String receivedData) {
-            super.onPostExecute(receivedData);
-
-            KinderData kinderData = kinderDataController.getKinderData(); //TODO 나중에 수정
-            try{
-                //유치원 API 다운로드 성공했을때 호출됨.
-                JSONObject jsonObject = new JSONObject(receivedData);
-                JSONArray kinderArray = jsonObject.getJSONArray("kinderInfo");
-                // 시 군 구 별로 한꺼번에 불러온 데이터
-
-                // 해당 시 군 구의 새로운 KinderUnits 생성.
-                KinderData.KinderUnits newUnits = kinderData.newKinderUnits(this.SiGunGu, kinderArray.length());
-
-                for(int i=0; i<kinderArray.length(); i++)
-                {
-                    JSONObject KinderObject = kinderArray.getJSONObject(i);
-                    KinderData.Kinder k = newUnits.newKinder(JsonHelper.toMap(KinderObject));
-                    //Log.d("Kinder API", "유치원 명 : " + k.getName() + ", 주소 : " + k.getAddr());
-                    KakaoGeoCoder.getLatLngJsonAsync(kinderDataController, newUnits, k);
-                }
-
-            }catch (JSONException e) {
-                e.printStackTrace();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            //doInBackground()로 부터 리턴된 값이 onPostExecute()의 매개변수로 넘어오므로 s를 출력한다.
-        }
-    }
-
     public class SiGunGuExtractor implements MapReverseGeoCoder.ReverseGeoCodingResultListener{
         private int finishCount = 1;
         private Set<String> NewGu = new HashSet<>();
@@ -334,7 +277,7 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
         @Override
         public void onReverseGeoCoderFoundAddress(MapReverseGeoCoder mapReverseGeoCoder, String s) {
             //TODO 전체 주소에서 구 를 추출해내는 로직 광역시 등에서 구 이름 중복되는 경우 해결할것.
-            String foundGu = KinderData.getSGGfromAddress(s);
+            String foundGu = KinderAPI.getSGGfromAddress(s);
             if(foundGu.equals("")){
                 // 구 를 추출해내지 못했을 때 처리
                 return;
@@ -347,34 +290,30 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
                 // 마지막 호출
                 KinderData kinderData = kinderDataController.getKinderData(); //TODO 나중에 수정
                 Set<String> CURRENT_GU = kinderData.getCurrentGu();
-
+                int SearchType = kinderData.getKinderNurseryType();
                 boolean isChanged = false;
                 Log.d("map", "             #####  FINAL PROCESS  #####");
 
                 // ## 새로 감지된 행정구에 대한 마커 다운로드 OR 드로잉
+                Set<String> GusToDraw = new HashSet<>();
                 for(String gu : NewGu){
                     if(!CURRENT_GU.contains(gu)){
                         Log.d("map", "New Gu detected" + gu);
+                        GusToDraw.add(gu);
                         isChanged = true;
 
-                        if(!kinderData.isDataExist(KinderData.TYPE_KINDER, gu)){
-                            //데이터 없으면 다운로드 한다.
-                            KinderAPI downloadFromGu = new KinderAPI(gu, KinderData.getKinderDataURL(gu), null);
-                            downloadFromGu.execute();
-                            //TODO 어린이집 데이터 불러오기 추가할것.
-                        }else{
-                            //데이터 있으면 그려준다.
-                            kinderData.getKinderUnitsFromGu(gu).drawMarkers();
-                        }
+                        //KakaoGeoCoder.getData(String, KinderDataController, int) : 해당 구, 타입의 데이터가 없으면 다운로드한다.
+                        KinderAPI.getData(gu, kinderDataController, SearchType);
                     }
                 }
 
                 //영역을 벗어난 행정구 찾아서 제거
+                Set<String> GusToRemove = new HashSet<>();
                 for(String gu : CURRENT_GU){
                     if(!NewGu.contains(gu)){
-                        if(kinderData.isDataExist(KinderData.TYPE_KINDER, gu)){
+                        if(kinderData.isDataExist(SearchType, gu)){
                             Log.d("map", "Delete Markers : " + gu);
-                            kinderData.getKinderUnitsFromGu(gu).removeMarkers();
+                            GusToRemove.add(gu);
                         }else{
                             //이전의 구를 아직 다운받는중인데 변경이 일어난경우
                         }
@@ -384,7 +323,7 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
 
                 //변동사항 있을때만 CURRENT_GU 갱신
                 if(isChanged){
-                    kinderData.setCurrentGu(NewGu);
+                    kinderData.setCurrentGu(NewGu, GusToRemove, GusToDraw);
                 }
                 Log.d("map", "Revers GeoCoding current gu : " + CURRENT_GU);
             }
@@ -394,135 +333,5 @@ public class fragFind extends Fragment implements View.OnClickListener, MapView.
         public void onReverseGeoCoderFailedToFindAddress(MapReverseGeoCoder mapReverseGeoCoder) {
             Log.d("map", "Revers GeoCoding FAILED");
         }
-
     }
 }
-
-/*
-*
-*
-
-public class UserLocation implements MapView.CurrentLocationEventListener{
-
-        private MapView mapView;
-        private boolean prev = false;
-
-        private MapPoint CURRENT_LOC_POINT = null;
-
-        private MapPOIItem centerMarker;
-        private MapCircle centerCircle;
-
-        public UserLocation(MapView m){
-            this.mapView = m;
-        }
-
-        public MapPoint getMapPoint(){
-            return CURRENT_LOC_POINT;
-        }
-        public boolean checkPermission(){
-            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-                Log.d("map", "gps Denied");
-                //요청
-                //요청 안되는거 해결할것.
-                if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)) {
-                } else {
-                    ActivityCompat.requestPermissions(getActivity(),
-                            new String[]{Manifest.permission.CAMERA},
-                            MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-                }
-                return false;
-
-            }else{//권한 있을때
-                return true;
-            }
-        }
-
-
-        public void moveMapCenterToUser(){
-            if(prev) {
-                mapView.removePOIItem(centerMarker);
-                mapView.removeCircle(centerCircle);
-            }
-
-            //위치 가져와서 MapPoint만들기
-            if(checkPermission()) {
-                LocationManager lm = (LocationManager) getActivity().getSystemService(getActivity().LOCATION_SERVICE);
-                Location currentLoc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-                CURRENT_LOC_POINT = MapPoint.mapPointWithGeoCoord(currentLoc.getLatitude(), currentLoc.getLongitude());
-
-                mapView.setMapCenterPoint(CURRENT_LOC_POINT, true);
-
-                //중심점 마커 띄우기
-                centerMarker = new MapPOIItem();
-                centerMarker.setItemName("Current User Point");
-                centerMarker.setTag(0);
-                centerMarker.setMapPoint(CURRENT_LOC_POINT);
-                centerMarker.setMarkerType(MapPOIItem.MarkerType.RedPin); // 기본으로 제공하는 RedPin 마커 모양.
-                centerMarker.setSelectedMarkerType(MapPOIItem.MarkerType.RedPin); // 마커를 클릭했을때, 기본으로 제공하는 RedPin 마커 모양.
-                mapView.addPOIItem(centerMarker);
-
-                //현위치에 원 추가
-                int rad = 70;
-                int circleColor = Color.argb(70,255,0,0);
-                centerCircle = new MapCircle(CURRENT_LOC_POINT, rad, circleColor, circleColor);
-
-                mapView.addCircle(centerCircle);
-                prev = true;
-            }
-        }
-
-        @Override
-        public void onCurrentLocationUpdate(MapView mapView, MapPoint mapPoint, float v) {
-
-        }
-
-        @Override
-        public void onCurrentLocationDeviceHeadingUpdate(MapView mapView, float v) {
-
-        }
-
-        @Override
-        public void onCurrentLocationUpdateFailed(MapView mapView) {
-
-        }
-
-        @Override
-        public void onCurrentLocationUpdateCancelled(MapView mapView) {
-
-        }
-    }
-
-        MapPOIItem mpLeftTop = new MapPOIItem();
-        MapPOIItem mpLeftBt = new MapPOIItem();
-        MapPOIItem mpRightTop = new MapPOIItem();
-        MapPOIItem mpRightBt = new MapPOIItem();
-
-        mpLeftTop.setMapPoint(cLeftTop);
-        mpLeftTop.setItemName("1");
-        mpLeftTop.setTag(0);
-        mpLeftTop.setMarkerType(MapPOIItem.MarkerType.RedPin); // 기본으로 제공하는 RedPin 마커 모양.
-
-        mpLeftBt.setMapPoint(cLeftBottom);
-        mpLeftBt.setItemName("2");
-        mpLeftBt.setTag(0);
-        mpLeftBt.setMarkerType(MapPOIItem.MarkerType.RedPin); // 기본으로 제공하는 RedPin 마커 모양.
-
-        mpRightTop.setMapPoint(cRightTop);
-        mpRightTop.setItemName("3");
-        mpRightTop.setTag(0);
-        mpRightTop.setMarkerType(MapPOIItem.MarkerType.RedPin);
-
-        mpRightBt.setMapPoint(cRightBottom);
-        mpRightBt.setItemName("4");
-        mpRightBt.setTag(0);
-        mpRightBt.setMarkerType(MapPOIItem.MarkerType.RedPin);
-
-        mapView.addPOIItem(mpLeftTop);
-        mapView.addPOIItem(mpLeftBt);
-        mapView.addPOIItem(mpRightTop);
-        mapView.addPOIItem(mpRightBt);
-*/
-

@@ -46,4 +46,7 @@ dependencies {
     implementation "androidx.transition:transition:1.3.0"
     implementation "androidx.annotation:annotation:1.1.0"
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
+
+    // XML to Json
+    compile 'com.github.smart-fun:XmlToJson:1.1.1'    //
 }

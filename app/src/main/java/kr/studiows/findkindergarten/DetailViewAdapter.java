@@ -33,6 +33,12 @@ public class DetailViewAdapter extends PagerAdapter {
         this.parent = parentController;
     }
 
+    @Override
+    public void notifyDataSetChanged() {
+        super.notifyDataSetChanged();
+    }
+
+
     public DetailViewAdapter(List<KinderData.Kinder> kinders, List<KinderData.Kinder> favorites, Context context, BottomPanelController parentController){
         //this.mKinderData = kinderdata;
         this.kinders = kinders;
@@ -73,7 +79,13 @@ public class DetailViewAdapter extends PagerAdapter {
         type.setText(kinders.get(position).getEstablishType());
         addr.setText(kinders.get(position).getAddr());
         favorite.setChecked(kinders.get(position).isFavorite());
-
+        
+        favorite.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                Log.d(TAG, "onCheckedChanged: ");
+            }
+        });
         favorite.setOnClickListener(new FavoriteClickListener(position, favorite));
         view.setOnClickListener(new CardClickListener(position));
 
@@ -99,8 +111,9 @@ public class DetailViewAdapter extends PagerAdapter {
              *  디테일 뷰 에서 해당 뷰를 클릭했을때
              *  해당 유치원의 전체 정보를 보여주는 창으로 넘어감
             **/
+            Log.d(TAG, "onClick: " + pos);
             Log.d(TAG, "onClick: " + kinders.get(pos).getName());
-            parent.showEntireInformation(kinders.get(pos));
+            parent.showEntireInformation(kinders.get(pos), pos);
         }
     }
     class FavoriteClickListener implements View.OnClickListener {
@@ -122,6 +135,7 @@ public class DetailViewAdapter extends PagerAdapter {
                 // 체크 해제 되면 favorite 리스트에서 제거.
                 favorites.remove(thisKinder);
             }
+            notifyDataSetChanged();
         }
     }
 }
